@@ -1,6 +1,8 @@
 // This is a simplified implementation for mood detection
 // In a real app, you would integrate with Gemini API or another AI service
 
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 export interface MoodAnalysisResult {
   mood: string;
   confidence: number;
@@ -54,9 +56,51 @@ export const availableMoods = Object.keys(moods).map(key => moods[key]);
 // Detect mood from text input
 export const detectMood = async (text: string): Promise<MoodAnalysisResult> => {
   try {
-    // In a real implementation, you would call an AI API here
-    // For now, we'll use a simple keyword matching approach
+    const genAI = new GoogleGenerativeAI('AIzaSyDZCTMU4v0qQRK11ilgF3LfLcUsj7Oppno');
     
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash",
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: 4096,
+      }
+    });
+
+    const prompt = `Analyze the following text and determine the mood. 
+    Return only one of these moods: Happy, Sad, Energetic, Chill, Romantic, Focus.
+    Text: "${text}"`;
+
+    let attempts = 0;
+    const maxAttempts = 3;
+    let detectedMood = '';
+
+    while (attempts < maxAttempts) {
+      try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        detectedMood = response.text().trim().toLowerCase();
+        
+        if (detectedMood && Object.keys(moods).includes(detectedMood)) {
+          return moods[detectedMood];
+        }
+        
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (err) {
+        attempts++;
+        console.error(`Error detecting mood on attempt ${attempts}/${maxAttempts}:`, err);
+        
+        if (attempts >= maxAttempts) {
+          throw err;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+      }
+    }
+
+    // Fallback to keyword matching if AI detection fails
     const lowerText = text.toLowerCase();
     
     if (lowerText.includes('happy') || lowerText.includes('joy') || lowerText.includes('excited')) {
@@ -73,8 +117,7 @@ export const detectMood = async (text: string): Promise<MoodAnalysisResult> => {
       return moods.focus;
     }
     
-    // Default to happy if no match
-    return moods.happy;
+    return moods.happy; // Default fallback
   } catch (error) {
     console.error('Error detecting mood:', error);
     return moods.happy; // Default fallback
