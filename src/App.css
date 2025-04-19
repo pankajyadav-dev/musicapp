@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif;
+  @apply bg-background-900 text-white;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-background-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-background-500;
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Mood Cards */
+.mood-card {
+  transition: all 0.3s ease;
+}
+
+.mood-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Album and Track Hover Effects */
+.album-card, .track-item {
+  transition: all 0.2s ease;
+}
+
+.album-card:hover {
+  transform: scale(1.03);
+}
+
+.track-item:hover {
+  @apply bg-background-700;
+}
+
+/* Player Progress Bar */
+.progress-bar {
+  @apply h-1 bg-background-600 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  @apply h-full bg-primary-500 transition-all duration-100;
+}
+
+/* Volume Slider */
+.volume-slider {
+  @apply h-1 bg-background-600 rounded-full overflow-hidden cursor-pointer;
+}
+
+.volume-slider-fill {
+  @apply h-full bg-primary-400 transition-all duration-100;
+}
+
+/* Placeholder Animation */
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+.loading-pulse {
+  animation: pulse 1.5s infinite;
+}
