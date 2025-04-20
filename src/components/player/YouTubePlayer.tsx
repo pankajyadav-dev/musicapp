@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import YouTube from 'react-youtube';
+import YouTube, { YouTubeEvent } from 'react-youtube';
 import { useMusic } from '../../context/MusicContext';
 
 interface YouTubePlayerProps {
@@ -10,12 +10,53 @@ interface YouTubePlayerProps {
 
 const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoId, onStateChange, volume }) => {
   const playerRef = useRef<any>(null);
+  const { playbackProgress, setProgress, isPlaying, currentSong } = useMusic();
+  const progressIntervalRef = useRef<number | null>(null);
 
+  // Handle volume changes
   useEffect(() => {
     if (playerRef.current) {
       playerRef.current.setVolume(volume * 100);
     }
   }, [volume]);
+
+  // Handle progress tracking
+  useEffect(() => {
+    const startProgressTracking = () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      
+      progressIntervalRef.current = window.setInterval(() => {
+        if (playerRef.current && isPlaying) {
+          const currentTime = playerRef.current.getCurrentTime();
+          setProgress(currentTime);
+        }
+      }, 1000);
+    };
+
+    if (isPlaying) {
+      startProgressTracking();
+    } else if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, [isPlaying, setProgress]);
+
+  // Handle seeking
+  useEffect(() => {
+    if (playerRef.current && isPlaying) {
+      const currentTime = playerRef.current.getCurrentTime();
+      if (Math.abs(currentTime - playbackProgress) > 2) {
+        playerRef.current.seekTo(playbackProgress);
+      }
+    }
+  }, [playbackProgress, isPlaying]);
 
   const opts = {
     height: '0',
@@ -30,7 +71,7 @@ const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoId, onStateChange, v
     },
   };
 
-  const onReady = (event: any) => {
+  const onReady = (event: YouTubeEvent) => {
     playerRef.current = event.target;
     playerRef.current.setVolume(volume * 100);
   };
@@ -43,7 +84,7 @@ const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoId, onStateChange, v
         videoId={videoId}
         opts={opts}
         onReady={onReady}
-        onStateChange={(event) => onStateChange(event.data)}
+        onStateChange={(event: YouTubeEvent) => onStateChange(event.data)}
       />
     </div>
   );

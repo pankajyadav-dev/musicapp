@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Play, Clock, Heart } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Clock, Heart } from 'lucide-react';
 import { useMood } from '../context/MoodContext';
+import { useMusic } from '../context/MusicContext';
 import { Album, Song, searchSongs } from '../api/saavnApi';
 
 const AlbumDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { currentMood } = useMood();
+  const { play, currentSong, isPlaying, pause, resume, addToQueue } = useMusic();
   const [album, setAlbum] = useState<Album | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   
   useEffect(() => {
     if (id) {
-      // In a real app, we would call an API endpoint to get album details
-      // For now, we'll simulate it by searching for songs with the album ID
       loadAlbumSongs(id);
     }
   }, [id]);
@@ -22,8 +22,6 @@ const AlbumDetails: React.FC = () => {
   const loadAlbumSongs = async (albumId: string) => {
     setLoading(true);
     try {
-      // This is a workaround since we don't have a direct API for album details
-      // In a real app, you would use the getAlbumDetails API
       const albumSongs = await searchSongs(`saavn album ${albumId}`);
       
       if (albumSongs.length > 0) {
@@ -62,6 +60,30 @@ const AlbumDetails: React.FC = () => {
     return hours > 0 
       ? `${hours} hr ${mins} min` 
       : `${mins} min`;
+  };
+  
+  const handlePlayAll = () => {
+    if (songs.length > 0) {
+      // Play the first song
+      play(songs[0]);
+      
+      // Add the rest to the queue
+      for (let i = 1; i < songs.length; i++) {
+        addToQueue(songs[i]);
+      }
+    }
+  };
+  
+  const handleSongPlay = (song: Song) => {
+    if (currentSong?.id === song.id) {
+      if (isPlaying) {
+        pause();
+      } else {
+        resume();
+      }
+    } else {
+      play(song);
+    }
   };
   
   if (loading) {
@@ -115,7 +137,10 @@ const AlbumDetails: React.FC = () => {
             </div>
             
             <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
-              <button className={`bg-${colorClass}-500 hover:bg-${colorClass}-600 text-white rounded-full px-8 py-3 flex items-center font-medium transition-colors`}>
+              <button 
+                onClick={handlePlayAll}
+                className={`bg-${colorClass}-500 hover:bg-${colorClass}-600 text-white rounded-full px-8 py-3 flex items-center font-medium transition-colors`}
+              >
                 <Play fill="white" className="mr-2" /> Play All
               </button>
               <button className="bg-transparent border border-gray-600 hover:border-white rounded-full w-10 h-10 flex items-center justify-center transition-colors">
@@ -136,21 +161,34 @@ const AlbumDetails: React.FC = () => {
       </div>
       
       <div>
-        {songs.map((song, index) => (
-          <div 
-            key={song.id}
-            className="grid grid-cols-12 px-4 py-3 rounded-md hover:bg-background-700 transition-colors items-center text-sm"
-          >
-            <div className="col-span-1 text-gray-400">{index + 1}</div>
-            <div className="col-span-5 truncate font-medium">{song.name}</div>
-            <div className="hidden md:block col-span-5 text-gray-400 truncate">
-              {song.artists.primary.map(artist => artist.name).join(', ')}
+        {songs.map((song, index) => {
+          const isCurrentSong = currentSong?.id === song.id;
+          return (
+            <div 
+              key={song.id}
+              onClick={() => handleSongPlay(song)}
+              className={`grid grid-cols-12 px-4 py-3 rounded-md ${isCurrentSong ? `bg-${colorClass}-900/40` : 'hover:bg-background-700'} transition-colors items-center text-sm cursor-pointer group`}
+            >
+              <div className="col-span-1 text-gray-400 flex items-center justify-center">
+                {isCurrentSong && isPlaying ? (
+                  <Pause className={`h-4 w-4 text-${colorClass}-400`} />
+                ) : (
+                  <>
+                    <span className="group-hover:hidden">{index + 1}</span>
+                    <Play className="hidden group-hover:block h-4 w-4" />
+                  </>
+                )}
+              </div>
+              <div className={`col-span-5 truncate font-medium ${isCurrentSong ? `text-${colorClass}-400` : ''}`}>{song.name}</div>
+              <div className="hidden md:block col-span-5 text-gray-400 truncate">
+                {song.artists.primary.map(artist => artist.name).join(', ')}
+              </div>
+              <div className="col-span-1 text-gray-400 text-right">
+                {formatDuration(song.duration)}
+              </div>
             </div>
-            <div className="col-span-1 text-gray-400 text-right">
-              {formatDuration(song.duration)}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { Song, getMoodBasedSongs } from '../api/saavnApi';
 import { searchYoutubeVideo } from '../api/youtubeApi';
 import { useMood } from './MoodContext';
@@ -48,6 +48,10 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   const [playbackProgress, setPlaybackProgress] = useState<number>(0);
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState<boolean>(false);
+  const [seekTo, setSeekTo] = useState<number | null>(null);
+  
+  const youtubePlayerRef = useRef<any>(null);
+  const playerStateRef = useRef<number>(-1);
 
   useEffect(() => {
     if (currentMood) {
@@ -68,9 +72,13 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   };
 
   const loadYouTubeVideo = async (song: Song) => {
-    const searchQuery = `${song.name} ${song.artists.primary.map(a => a.name).join(' ')}`;
-    const videoId = await searchYoutubeVideo(searchQuery);
-    setCurrentVideoId(videoId);
+    try {
+      const searchQuery = `${song.name} ${song.artists.primary.map(a => a.name).join(' ')}`;
+      const videoId = await searchYoutubeVideo(searchQuery);
+      setCurrentVideoId(videoId);
+    } catch (error) {
+      console.error('Error loading YouTube video:', error);
+    }
   };
 
   const play = async (song: Song) => {
@@ -107,7 +115,7 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   const previous = async () => {
     if (playbackProgress > 5 && currentSong) {
       setPlaybackProgress(0);
-      await play(currentSong);
+      setSeekTo(0);
     } else if (recommendedSongs.length > 0 && currentSong) {
       const currentIndex = recommendedSongs.findIndex(song => song.id === currentSong.id);
       const prevIndex = (currentIndex - 1 + recommendedSongs.length) % recommendedSongs.length;
@@ -118,6 +126,7 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   const setProgress = (progress: number) => {
     if (progress >= 0 && progress <= (currentSong?.duration || 0)) {
       setPlaybackProgress(progress);
+      setSeekTo(progress);
     }
   };
 
@@ -130,6 +139,9 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   };
 
   const onYouTubeStateChange = (state: number) => {
+    // Store current player state
+    playerStateRef.current = state;
+    
     // YouTube player states:
     // -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (video cued)
     switch (state) {

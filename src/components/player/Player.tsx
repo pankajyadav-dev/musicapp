@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Heart, Repeat, Shuffle } from 'lucide-react';
 import { useMusic } from '../../context/MusicContext';
 import YouTubePlayer from './YouTubePlayer';
@@ -21,6 +21,15 @@ const Player: React.FC = () => {
   
   const [isMuted, setIsMuted] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [isDraggingProgress, setIsDraggingProgress] = useState(false);
+  const [localProgress, setLocalProgress] = useState(0);
+  
+  // Keep local progress in sync with global progress when not dragging
+  useEffect(() => {
+    if (!isDraggingProgress) {
+      setLocalProgress(playbackProgress);
+    }
+  }, [playbackProgress, isDraggingProgress]);
   
   const togglePlay = () => {
     if (isPlaying) {
@@ -49,9 +58,21 @@ const Player: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   
+  const handleProgressMouseDown = () => {
+    setIsDraggingProgress(true);
+  };
+  
+  const handleProgressMouseUp = () => {
+    setIsDraggingProgress(false);
+    setProgress(localProgress);
+  };
+  
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
-    setProgress(value);
+    setLocalProgress(value);
+    if (!isDraggingProgress) {
+      setProgress(value);
+    }
   };
   
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,14 +156,18 @@ const Player: React.FC = () => {
           {/* Progress Bar */}
           <div className="w-full flex items-center space-x-3 mt-2">
             <span className="text-xs text-gray-400 w-10 text-right">
-              {formatTime(playbackProgress)}
+              {formatTime(isDraggingProgress ? localProgress : playbackProgress)}
             </span>
             <input
               type="range"
               min="0"
               max={currentSong?.duration || 100}
-              value={playbackProgress}
+              value={isDraggingProgress ? localProgress : playbackProgress}
               onChange={handleProgressChange}
+              onMouseDown={handleProgressMouseDown}
+              onMouseUp={handleProgressMouseUp}
+              onTouchStart={handleProgressMouseDown}
+              onTouchEnd={handleProgressMouseUp}
               className="flex-1 h-1 bg-background-600 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
             />
             <span className="text-xs text-gray-400 w-10">
