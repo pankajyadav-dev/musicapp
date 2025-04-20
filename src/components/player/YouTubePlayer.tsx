@@ -13,12 +13,32 @@ const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoId, onStateChange, v
   const { playbackProgress, setProgress, isPlaying, currentSong } = useMusic();
   const progressIntervalRef = useRef<number | null>(null);
 
-  // Handle volume changes
+  // Add state change handler
+  const handleStateChange = (event: YouTubeEvent) => {
+    const playerState = event.data;
+    
+    // Ensure player ref is updated
+    if (!playerRef.current) {
+      playerRef.current = event.target;
+    }
+    
+    // Call the provided state change handler
+    onStateChange(playerState);
+  };
+
+  // Update volume effect
   useEffect(() => {
     if (playerRef.current) {
       playerRef.current.setVolume(volume * 100);
+      
+      // Sync play/pause state with player
+      if (isPlaying) {
+        playerRef.current.playVideo();
+      } else {
+        playerRef.current.pauseVideo();
+      }
     }
-  }, [volume]);
+  }, [volume, isPlaying]);
 
   // Handle progress tracking
   useEffect(() => {
@@ -84,7 +104,7 @@ const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoId, onStateChange, v
         videoId={videoId}
         opts={opts}
         onReady={onReady}
-        onStateChange={(event: YouTubeEvent) => onStateChange(event.data)}
+        onStateChange={handleStateChange}
       />
     </div>
   );

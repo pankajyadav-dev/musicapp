@@ -32,10 +32,12 @@ const Player: React.FC = () => {
   }, [playbackProgress, isDraggingProgress]);
   
   const togglePlay = () => {
-    if (isPlaying) {
-      pause();
-    } else {
-      resume();
+    if (currentSong) {
+      if (isPlaying) {
+        pause();
+      } else {
+        resume();
+      }
     }
   };
   
@@ -138,7 +140,8 @@ const Player: React.FC = () => {
             </button>
             <button 
               onClick={togglePlay}
-              className="bg-white rounded-full p-2 text-black hover:scale-105 transition-transform focus:outline-none"
+              className="bg-white rounded-full p-2 text-black hover:scale-105 transition-transform focus:outline-none disabled:opacity-50"
+              disabled={!currentSong}
             >
               {isPlaying ? <Pause size={20} /> : <Play size={20} />}
             </button>

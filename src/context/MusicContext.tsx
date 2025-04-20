@@ -90,11 +90,17 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
 
   const pause = () => {
     setIsPlaying(false);
+    if (youtubePlayerRef.current) {
+      youtubePlayerRef.current.pauseVideo();
+    }
   };
 
   const resume = () => {
     if (currentSong) {
       setIsPlaying(true);
+      if (youtubePlayerRef.current) {
+        youtubePlayerRef.current.playVideo();
+      }
     }
   };
 
@@ -153,6 +159,15 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
         break;
       case 2: // paused
         setIsPlaying(false);
+        break;
+      case 3: // buffering
+        // Optionally handle buffering state
+        break;
+      case 5: // video cued
+        // Start playing when video is ready
+        if (youtubePlayerRef.current) {
+          youtubePlayerRef.current.playVideo();
+        }
         break;
     }
   };
